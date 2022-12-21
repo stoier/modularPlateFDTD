@@ -3,7 +3,7 @@ fs = 44100;
 lengthSound = 10*fs;
 k=1/fs; %time step
 
-Bow = true;
+Bow = false;
 plateTension = false;
 
 stringConn = true;
@@ -77,7 +77,7 @@ for i = 1 : numStrings
     lambdaSSq(i) = cSSq(i)*k*k/hS(i)^2;
     muSSq(i) = kappaSSq*k*k/hS(i)^4;
     uS1(i)  = 2-2*lambdaSSq(i)-6*muSSq(i)-4*sigma1S*k/hS(i)^2;
-    uS2(i) = lambda1SSq(i)+4*muSSq(i)+2*sigma1S*k/hS(i)^2;
+    uS2(i) = lambdaSSq(i)+4*muSSq(i)+2*sigma1S*k/hS(i)^2;
     uS3(i) = -1+sigma0S*k + 4*sigma1S*k/hS(i)^2;
     stringConnTerm(i) = k * k / (rhoS * AS * hS(i) * (1.0 + sigma0S * k));
 end

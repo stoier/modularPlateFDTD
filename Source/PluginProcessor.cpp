@@ -11,8 +11,8 @@
 
 struct ChainSettings
 {
-    int  excF { 0 }, xPosMod { 0 }, yPosMod { 0 };
-    float sig0 { 0 }, sig1 { 0 }, lengthX { 0 }, lengthY { 0 }, excX { 0 }, excY { 0 }, lisX { 0 }, lisY { 0 }, thickness { 0 }, excT { 0 }, vB { 0 }, FB { 0 }, a { 0 }, bAtt1 { 0 }, bDec1 { 0 }, bSus1 { 0 }, bRel1 { 0 }, FBEnv1 { 0 }, vBEnv1 { 0 }, lfoRate { 0 };
+    int  excF { 0 }, xPosMod { 0 }, yPosMod { 0 }, numStrings { 0 }, sTenDiff { 0 }, sTen { 0 }, cylinderRadius { 0 },  bellRadius { 0 };
+    float sig0 { 0 }, sig1 { 0 }, lengthX { 0 }, lengthY { 0 }, excX { 0 }, excY { 0 }, lisX { 0 }, lisY { 0 }, thickness { 0 }, excT { 0 }, vB { 0 }, FB { 0 }, a { 0 }, bAtt1 { 0 }, bDec1 { 0 }, bSus1 { 0 }, bRel1 { 0 }, FBEnv1 { 0 }, vBEnv1 { 0 }, lfoRate { 0 }, sLen { 0 }, sRad { 0 }, sPosSpread { 0 }, sSig0 { 0 }, cylinderLength { 0 }, bellLength { 0 };
 };
 
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
@@ -174,10 +174,10 @@ void PlateAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     
     auto chainSettings = getChainSettings(tree);
     
-    thinPlate -> updateParameters(chainSettings.sig0, chainSettings.sig1, chainSettings.lengthX, chainSettings.lengthY, chainSettings.excX, chainSettings.excY, chainSettings.lisX, chainSettings.lisY, chainSettings.thickness, chainSettings.excF, chainSettings.excT, chainSettings.vB, chainSettings.FB, chainSettings.a, excTypeId, chainSettings.bAtt1, chainSettings.bDec1 , chainSettings.bSus1, chainSettings.bRel1, chainSettings.FBEnv1, chainSettings.vBEnv1, chainSettings.lfoRate, chainSettings.xPosMod, chainSettings.yPosMod);
+    thinPlate -> updateParameters(chainSettings.sig0, chainSettings.sig1, chainSettings.lengthX, chainSettings.lengthY, chainSettings.excX, chainSettings.excY, chainSettings.lisX, chainSettings.lisY, chainSettings.thickness, chainSettings.excF, chainSettings.excT, chainSettings.vB, chainSettings.FB, chainSettings.a, excTypeId, chainSettings.bAtt1, chainSettings.bDec1 , chainSettings.bSus1, chainSettings.bRel1, chainSettings.FBEnv1, chainSettings.vBEnv1, chainSettings.lfoRate, chainSettings.xPosMod, chainSettings.yPosMod, chainSettings.numStrings, chainSettings.sLen, chainSettings.sPosSpread, chainSettings.sTen, chainSettings.sTenDiff, chainSettings.sRad, chainSettings.sSig0, chainSettings.cylinderLength, chainSettings.cylinderRadius, chainSettings.bellLength, chainSettings.bellRadius, bellGrowthMenuId, tubeConn, springConn);
     thinPlate -> updatePlateMaterial(plateMaterialId);
     thinPlate -> getSampleRate(fs);
-    
+
     if (hit == true)
     {
         firstHit = true;
@@ -266,6 +266,17 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& tree)
     settings.lfoRate = tree.getRawParameterValue("LFO Rate")-> load();
     settings.xPosMod = tree.getRawParameterValue("X Pos Mod Depth")-> load();
     settings.yPosMod = tree.getRawParameterValue("Y Pos Mod Depth")-> load();
+    settings.numStrings = tree.getRawParameterValue("Number of Strings")-> load();
+    settings.sLen = tree.getRawParameterValue("String Length")-> load();
+    settings.sRad = tree.getRawParameterValue("String Radius")-> load();
+    settings.sTen = tree.getRawParameterValue("String Tension")-> load();
+    settings.sTenDiff = tree.getRawParameterValue("String Tension Difference")-> load();
+    settings.sPosSpread = tree.getRawParameterValue("String Position Spread")-> load();
+    settings.sSig0 = tree.getRawParameterValue("String Damping") -> load();
+    settings.cylinderLength = tree.getRawParameterValue("Cylinder Length")->load();
+    settings.cylinderRadius = tree.getRawParameterValue("Cylinder Radius")->load();
+    settings.bellLength = tree.getRawParameterValue("Bell Length")->load();
+    settings.bellRadius = tree.getRawParameterValue("Bell Radius")->load();
     return settings;
 }
 
@@ -293,9 +304,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlateAudioProcessor::createP
     layout.add(std::make_unique<juce::AudioParameterFloat>("Bow release 1", "Bow release 1", 0.01f, 5.f, 0.01f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("Bow force env 1", "Bow force env 1", -1.0f, 1.0f, 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("Bow velocity env 1", "Bow velocity env 1", -1.0f, 1.0f, 0.0f));
-    layout.add(std::make_unique<juce::AudioParameterFloat>("LFO Rate", "LFO Rate", 0.1, 100, 1));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("LFO Rate", "LFO Rate", 0.01, 10, 0.1));
     layout.add(std::make_unique<juce::AudioParameterInt>("X Pos Mod Depth", "X Pos Mod Depth", 0, 100, 0));
     layout.add(std::make_unique<juce::AudioParameterInt>("Y Pos Mod Depth", "Y Pos Mod Depth", 0, 100, 0));
+    layout.add(std::make_unique<juce::AudioParameterInt>("Number of Strings", "Number of Strings", 0, 8, 0));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("String Length", "String Length" , 0.1f, 0.9f, 0.2f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("String Radius", "String Radius", 0.01f, 2.f, 1.f));
+    layout.add(std::make_unique<juce::AudioParameterInt>("String Tension", "String Tension" , 500, 2000, 1000));
+    layout.add(std::make_unique<juce::AudioParameterInt>("String Tension Difference", "String Tension Difference" , 0, 100, 25));
+    layout.add(std::make_unique<juce::AudioParameterInt>("String Position Spread", "String Position Spread", 10, 90, 50));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("String Damping", "String Damping", 0.01f, 5.f, 0.2f));
+    layout.add(std::make_unique<juce::AudioParameterInt>("Cylinder Radius", "Cylinder Radius", 1, 20, 2));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Cylinder Length", "Cylinder Length", 0.1f, 4, 1.77f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Bell Length", "Bell Length", 0.f, 1.f, 0.8f));
+    layout.add(std::make_unique<juce::AudioParameterInt>("Bell Radius", "Bell Radius", 1, 100, 10));
+
     return layout;
 }
 

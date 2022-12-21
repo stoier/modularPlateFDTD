@@ -70,6 +70,9 @@ public:
     bool bowStart, bowEnd, firstBow;
     int plateMaterialId;
     int excTypeId;
+    int bellGrowthMenuId = 1;
+    bool tubeConn = false;
+    bool springConng = true;
     
 private:
     //==============================================================================
